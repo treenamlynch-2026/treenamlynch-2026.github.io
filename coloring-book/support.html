@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calm Coloring Book Support</title>
+<meta name="description" content="Help and contact for Calm Coloring Book for Adults on iPhone.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #33302B;
+  --paper: #FBF8F2;
+  --cream: #F1EADF;
+  --accent: #D9704A;
+  --muted: #5E5850;
+  --line: #DDD4C6;
+  --c1: #4F7A5E; --c2: #3F6E9C; --c3: #E3A93A; --c4: #D9704A; --c5: #8C5E86;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #EFE9DF;
+    --paper: #1D1B18;
+    --cream: #2A2723;
+    --accent: #EE8E67;
+    --muted: #B7AEA2;
+    --line: #3A3631;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+h1, h2 { font-family: "Fraunces", Georgia, serif; line-height: 1.15; }
+header { background: var(--cream); padding: 3.5rem 1.25rem 3rem; }
+/* crayon stripe under the header */
+.stripe { height: 8px; background: linear-gradient(90deg, var(--c1) 0 20%, var(--c2) 20% 40%, var(--c3) 40% 60%, var(--c4) 60% 80%, var(--c5) 80%); }
+.wrap { max-width: 42rem; margin: 0 auto; }
+h1 { font-size: clamp(2.1rem, 7vw, 3.2rem); font-weight: 700; margin: 0 0 .75rem; }
+header p { margin: 0; color: var(--muted); font-size: 1.1rem; max-width: 34rem; }
+.facts { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+.facts li { border: 1.5px solid var(--ink); border-radius: 999px; padding: .2rem .8rem; font-size: .92rem; }
+main { padding: 2.5rem 1.25rem 4rem; }
+h2 { font-size: 1.4rem; font-weight: 700; margin: 2.5rem 0 .75rem; }
+h2:first-child { margin-top: 0; }
+p { margin: 0 0 1rem; }
+.box { border-left: 5px solid var(--accent); padding: 1rem 1.25rem; background: var(--cream); border-radius: 0 10px 10px 0; margin: 0 0 2rem; }
+.box p { margin: 0 0 .5rem; color: var(--ink); }
+.box p:last-child { margin: 0; }
+.box .note { color: var(--muted); font-size: .95rem; }
+.policy p { color: var(--muted); }
+a { color: inherit; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+details { border-bottom: 1px solid var(--line); }
+summary { cursor: pointer; padding: 1rem 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-size: 1.3rem; line-height: 1; color: var(--accent); flex-shrink: 0; }
+details[open] summary::after { content: "–"; }
+details p, details ol { margin: 0 0 1rem; color: var(--muted); }
+details ol { padding-left: 1.25rem; }
+footer { border-top: 1px solid var(--line); padding: 1.5rem 1.25rem; color: var(--muted); font-size: .9rem; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
+</style>
+</head>
+<body>
+<header>
+<div class="wrap">
+<h1>Calm Coloring Book support</h1>
+<p>Calm Coloring Book for Adults is a quiet place to slow down and color, one page at a time.</p>
+<ul class="facts">
+<li>Free books included</li>
+<li>No sign-up</li>
+<li>Tap to fill or brush</li>
+</ul>
+</div>
+</header>
+<div class="stripe"></div>
+
+<main class="wrap">
+<h2>Contact</h2>
+<div class="box">
+<p>Email <a href="mailto:xmlbabe@gmail.com?subject=Calm%20Coloring%20Book%20support">xmlbabe@gmail.com</a></p>
+<p class="note">Include your device model, iOS version and what happened.</p>
+</div>
+
+<h2>Common questions</h2>
+
+<details>
+<summary>How do I color a page?</summary>
+<ol>
+<li>Open a coloring book and choose a page.</li>
+<li>Pick a color from the palette.</li>
+<li>Tap an area to fill it, or switch to the brush to color freehand.</li>
+</ol>
+</details>
+
+<details>
+<summary>Do I need an account?</summary>
+<p>No. There's no sign-up, email or password. The app sets itself up automatically the first time you open it.</p>
+</details>
+
+<details>
+<summary>Are the coloring books free?</summary>
+<p>Yes. All coloring books in the current version are free.</p>
+</details>
+
+<details>
+<summary>New books aren't showing up</summary>
+<p>Books are downloaded over the internet. Check that you're connected, then close and reopen the app.</p>
+</details>
+
+<details>
+<summary>The app crashed or froze</summary>
+<p>Close the app completely and reopen it. If it keeps happening, update to the latest version from the App Store, then email support with your device model and iOS version.</p>
+</details>
+</main>
+
+<footer>
+<div class="wrap">
+<span>© 2026 Treena Lynch</span>
+<a href="privacy.html">Privacy policy</a>
+</div>
+</footer>
+</body>
+</html>
