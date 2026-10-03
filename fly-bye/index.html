@@ -204,7 +204,7 @@ async function geocode(q){
     const j = await r.json();
     const TYPES={PointAddress:"Exact address",Subaddress:"Exact address",StreetAddress:"Address (interpolated)",StreetName:"Street only",Postal:"ZIP code area",Locality:"City / area",POI:"Place"};
     const out=(j.candidates||[]).filter(c=>c.score>=80).map(c=>{const parts=c.address.split(", ");
-      return {name:parts[0], sub:parts.slice(1).join(", ")+" Â· "+(TYPES[c.attributes.Addr_type]||c.attributes.Addr_type), lon:c.location.x, lat:c.location.y,
+      return {name:parts[0], sub:parts.slice(1).join(", ")+" · "+(TYPES[c.attributes.Addr_type]||c.attributes.Addr_type), lon:c.location.x, lat:c.location.y,
         exact:/PointAddress|Subaddress|StreetAddress/.test(c.attributes.Addr_type) && c.score>=97};});
     if (out.length) return out;
   }catch(e){}
@@ -253,7 +253,7 @@ function lengthOf(arr){ let d=0; for(let i=1;i<arr.length;i++) d+=new C.Ellipsoi
 function startAt(r){
   stopSpin(); route=null; pts=[C.Cartographic.fromDegrees(r.lon,r.lat)]; redrawMarkers();
   camera.flyTo({destination:C.Cartesian3.fromDegrees(r.lon, r.lat-0.007, 1500), orientation:{heading:0,pitch:C.Math.toRadians(-62),roll:0}, duration:4.5,
-    easingFunction:C.EasingFunction.QUADRATIC_IN_OUT, complete:arrive, cancel:arrive}); lock(); busy=true; $("drawHelp").textContent="Flying to your start pointâ€¦";
+    easingFunction:C.EasingFunction.QUADRATIC_IN_OUT, complete:arrive, cancel:arrive}); lock(); busy=true; $("drawHelp").textContent="Flying to your start point…";
   setStep(2);
 }
 
