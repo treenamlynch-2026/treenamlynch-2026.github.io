@@ -106,7 +106,7 @@ input[type=range]{accent-color:var(--amber);width:100%}
     <p id="drawHelp" class="opt">Tap the map to add points from <b>A</b> to your destination. Drag to pan, pinch to zoom.</p>
     <div class="stat opt"><div>POINTS<b id="nPts">1</b></div><div>DISTANCE<b id="dist">0.00 mi</b></div></div>
     <label class="check opt"><input type="checkbox" id="optRoads"> Follow roads (driving route)</label>
-    <div class="row"><button id="bUndo">Undo</button><button id="bClear">Clear</button><button class="go" id="bFly" style="flex:1" disabled>Fly it</button></div>
+    <div class="row"><button id="bMoveA" class="opt">Move A</button><button id="bUndo">Undo</button><button id="bClear">Clear</button><button class="go" id="bFly" style="flex:1" disabled>Fly it</button></div>
     <div class="err" id="eDraw" hidden></div>
   </div>
 
@@ -183,7 +183,7 @@ scene.preRender.addEventListener(() => {
   if (spinning) camera.rotate(C.Cartesian3.UNIT_Z, -dt*0.9);  // ~52°/s: quick world tour
   tick(dt);
 });
-let busy=false;
+let busy=false, moveA=false;
 const stopSpin = () => spinning = false;
 function arrive(){ unlock(); busy=false; $("drawHelp").innerHTML="Tap the map to add points from <b>A</b> to your destination. Drag to pan, pinch to zoom."; }
 const lock=()=>{scene.screenSpaceCameraController.enableInputs=false}, unlock=()=>{scene.screenSpaceCameraController.enableInputs=true};
@@ -198,19 +198,22 @@ function setStep(n){
 
 /* Geocoding: Photon (OSM), Nominatim fallback */
 async function geocode(q){
+  // Primary: Esri World Geocoder (rooftop-level US addresses). Fallback: Photon (OSM).
   try{
-    const r = await fetch("https://photon.komoot.io/api/?limit=5&q="+encodeURIComponent(q));
-    if (!r.ok) throw 0;
+    const r = await fetch("https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=5&outFields=Addr_type,Score&SingleLine="+encodeURIComponent(q));
     const j = await r.json();
-    const out = j.features.map(f=>{const p=f.properties;
-      const main=[p.housenumber&&p.street?p.housenumber+" "+p.street:p.name||p.street].filter(Boolean).join("");
-      const sub=[p.city||p.county,p.state,p.country].filter(Boolean).join(", ");
-      return {name:main||sub, sub:main?sub:"", lon:f.geometry.coordinates[0], lat:f.geometry.coordinates[1]};});
+    const TYPES={PointAddress:"Exact address",Subaddress:"Exact address",StreetAddress:"Address (interpolated)",StreetName:"Street only",Postal:"ZIP code area",Locality:"City / area",POI:"Place"};
+    const out=(j.candidates||[]).filter(c=>c.score>=80).map(c=>{const parts=c.address.split(", ");
+      return {name:parts[0], sub:parts.slice(1).join(", ")+" Â· "+(TYPES[c.attributes.Addr_type]||c.attributes.Addr_type), lon:c.location.x, lat:c.location.y,
+        exact:/PointAddress|Subaddress|StreetAddress/.test(c.attributes.Addr_type) && c.score>=97};});
     if (out.length) return out;
   }catch(e){}
-  const r = await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q="+encodeURIComponent(q));
+  const r = await fetch("https://photon.komoot.io/api/?limit=5&q="+encodeURIComponent(q));
   const j = await r.json();
-  return j.map(x=>({name:x.display_name.split(",")[0], sub:x.display_name.split(",").slice(1,4).join(",").trim(), lon:+x.lon, lat:+x.lat}));
+  return j.features.map(f=>{const p=f.properties;
+    const main=p.housenumber&&p.street?p.housenumber+" "+p.street:(p.name||p.street||"");
+    const sub=[p.city||p.county,p.state,p.country].filter(Boolean).join(", ");
+    return {name:main||sub, sub:main?sub:"", lon:f.geometry.coordinates[0], lat:f.geometry.coordinates[1], exact:false};});
 }
 $("fStart").onsubmit = async e => {
   e.preventDefault(); const q=$("qStart").value.trim(); if(!q) return;
@@ -221,7 +224,7 @@ $("fStart").onsubmit = async e => {
     res.forEach(r=>{ const b=document.createElement("button"); b.type="button";
       b.innerHTML = "<span></span><small></small>"; b.firstChild.textContent=r.name; b.lastChild.textContent=r.sub;
       b.onclick=()=>startAt(r); $("rStart").appendChild(b); });
-    if (res.length===1) startAt(res[0]);
+    if (res.length===1 && res[0].exact) startAt(res[0]);
   }catch(err){ $("eStart").textContent="Search failed. Check your connection and try again."; $("eStart").hidden=false; }
   $("bSearch").disabled=false; $("bSearch").textContent="Search";
 };
@@ -262,9 +265,11 @@ function pickCarto(pos){
 }
 viewer.screenSpaceEventHandler.setInputAction(e=>{
   if (busy || $("pDraw").hidden || !pts.length) return;
+  if (moveA){ const c0 = pickCarto(e.position); if(c0){ pts[0]=c0; route=null; redrawMarkers(); } moveA=false; $("bMoveA").textContent="Move A"; return; }
   const c = pickCarto(e.position); if(!c) return;
   route=null; pts.push(c); redrawMarkers();
 }, C.ScreenSpaceEventType.LEFT_CLICK);
+$("bMoveA").onclick = ()=>{ moveA=!moveA; $("bMoveA").textContent = moveA ? "Tap new A" : "Move A"; };
 $("bUndo").onclick = ()=>{ if(pts.length>1){pts.pop(); route=null; redrawMarkers();} };
 $("bClear").onclick = ()=>{ pts=pts.slice(0,1); route=null; redrawMarkers(); };
 
