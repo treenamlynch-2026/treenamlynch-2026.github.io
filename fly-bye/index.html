@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>Fly Bye</title>
+<title>Flyover My Route</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css">
@@ -75,7 +75,7 @@ input[type=range]{accent-color:var(--amber);width:100%}
 <div id="credit">Imagery © Esri, Maxar, Earthstar Geographics · Search © OpenStreetMap</div>
 
 <header>
-  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c4-1 6-6 9-6s4 4 9 2" stroke="#ffb23e"/><circle cx="3" cy="17" r="2" fill="#e9f0f2" stroke="none"/><path d="M17 5l4 1-1 4" /><path d="M21 6l-6 6"/></svg>Fly Bye</div>
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c4-1 6-6 9-6s4 4 9 2" stroke="#ffb23e"/><circle cx="3" cy="17" r="2" fill="#e9f0f2" stroke="none"/><path d="M17 5l4 1-1 4" /><path d="M21 6l-6 6"/></svg>Flyover My Route</div>
   <div class="right">
     <div class="hud"><span>LAT</span><b id="hLat">—</b><span>LON</span><b id="hLon">—</b><span>ALT</span><b id="hAlt">—</b><span>HDG</span><b id="hHdg">—</b></div>
     <button id="gear" aria-label="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -159,11 +159,11 @@ async function loadGoogle(key){
     $("keyState").textContent = "Google 3D tiles on.";
   }catch(e){ g3d = null; scene.globe.show = true; $("keyState").textContent = "Google tiles failed to load: check the key and that Map Tiles API is enabled."; }
 }
-$("gkey").value = store.get("flybye.gkey") || "";
+$("gkey").value = store.get("fmr.gkey") || "";
 loadGoogle($("gkey").value);
 $("gear").onclick = () => $("settings").hidden = !$("settings").hidden;
 $("closeSettings").onclick = () => $("settings").hidden = true;
-$("saveKey").onclick = () => { const k=$("gkey").value.trim(); store.set("flybye.gkey",k); loadGoogle(k); };
+$("saveKey").onclick = () => { const k=$("gkey").value.trim(); store.set("fmr.gkey",k); loadGoogle(k); };
 
 /* HUD */
 scene.postRender.addEventListener(() => {
