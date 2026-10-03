@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Fly Bye</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css">
+<style>
+/* Layout: full-bleed globe; HUD strip on top; one step card docked bottom (bottom-left on wide screens). Single dark look over imagery. */
+:root{
+  --ink:#0d1418; --panel:rgba(13,20,24,.86); --line:rgba(214,226,232,.16);
+  --fg:#e9f0f2; --muted:#93a6ad; --amber:#ffb23e; --amber-ink:#2a1a00; --sky:#7fd3ff;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--fg);font:15px/1.45 var(--body);overflow:hidden}
+#globe{position:fixed;inset:0}
+.cesium-viewer-bottom{display:none}
+#credit{position:fixed;right:8px;bottom:calc(4px + env(safe-area-inset-bottom,0px));font-size:10px;color:var(--muted);text-shadow:0 1px 2px #000;z-index:2;pointer-events:none}
+header{position:fixed;top:0;left:0;right:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:linear-gradient(var(--panel),rgba(13,20,24,0));pointer-events:none}
+.brand{font:800 22px/1 var(--display);letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.brand svg{width:22px;height:22px}
+.hud{font:500 11px/1.3 var(--mono);color:var(--muted);display:grid;grid-template-columns:auto auto;gap:0 10px;text-align:right}
+.hud b{color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums}
+#gear{pointer-events:auto;background:none;border:1px solid var(--line);color:var(--fg);border-radius:8px;width:34px;height:34px;cursor:pointer;display:grid;place-items:center}
+.right{display:flex;gap:12px;align-items:center}
+.card{position:fixed;z-index:3;left:16px;right:16px;bottom:calc(22px + env(safe-area-inset-bottom,0px));max-width:420px;margin-inline:auto;
+  background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px}
+@media (min-width:760px){.card{margin-inline:0;left:20px;bottom:28px}}
+.steps{display:flex;gap:6px;font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.steps span{flex:1;padding-top:7px;border-top:2px solid var(--line)}
+.steps span.on{color:var(--amber);border-color:var(--amber)}
+.steps span.done{color:var(--fg);border-color:var(--fg)}
+h1{font:600 21px/1.15 var(--display);margin:0;text-wrap:balance}
+p{margin:0;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input[type=text],input[type=password]{flex:1;min-width:0;font:inherit;color:var(--fg);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+input:focus-visible,button:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+button{font:600 14px/1 var(--body);border-radius:10px;padding:12px 14px;cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--fg)}
+button.go{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+button:disabled{opacity:.4;cursor:default}
+.results{display:grid;gap:2px;max-height:180px;overflow:auto}
+.results button{text-align:left;font-weight:500;padding:10px;background:none;border:none;border-radius:8px;line-height:1.3}
+.results button:hover{background:rgba(255,255,255,.07)}
+.results small{display:block;color:var(--muted);font-weight:400}
+.stat{display:flex;gap:16px;font:500 12px/1.2 var(--mono);color:var(--muted)}
+.stat b{display:block;color:var(--fg);font-size:17px;font-variant-numeric:tabular-nums}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:none;border-radius:0;flex:1;padding:9px 10px;font-weight:500}
+.seg button[aria-pressed=true]{background:var(--fg);color:var(--ink)}
+label.sl{display:grid;gap:4px;font-size:12px;color:var(--muted);flex:1;min-width:120px}
+label.sl output{color:var(--fg);font:500 12px var(--mono)}
+input[type=range]{accent-color:var(--amber);width:100%}
+.check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--amber)}
+.err{color:#ff8a7a;font-size:13px}
+#settings{position:fixed;z-index:4;top:calc(60px + env(safe-area-inset-top,0px));right:16px;left:16px;max-width:360px;margin-left:auto}
+.hint{font-size:12px;color:var(--muted)}
+.hint a{color:var(--sky)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="globe"></div>
+<div id="credit">Imagery © Esri, Maxar, Earthstar Geographics · Search © OpenStreetMap</div>
+
+<header>
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c4-1 6-6 9-6s4 4 9 2" stroke="#ffb23e"/><circle cx="3" cy="17" r="2" fill="#e9f0f2" stroke="none"/><path d="M17 5l4 1-1 4" /><path d="M21 6l-6 6"/></svg>Fly Bye</div>
+  <div class="right">
+    <div class="hud"><span>LAT</span><b id="hLat">—</b><span>LON</span><b id="hLon">—</b><span>ALT</span><b id="hAlt">—</b><span>HDG</span><b id="hHdg">—</b></div>
+    <button id="gear" aria-label="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+</header>
+
+<div id="settings" class="card" hidden>
+  <h1>Settings</h1>
+  <label class="check"><input type="checkbox" id="optLabels" checked> Show place labels</label>
+  <div class="hint">Optional: paste a Google Maps API key (Map Tiles API enabled) for photorealistic 3D buildings. Stored only in this browser.</div>
+  <div class="row"><input type="password" id="gkey" placeholder="Google API key" autocomplete="off"><button id="saveKey">Save</button></div>
+  <div class="hint" id="keyState"></div>
+  <button id="closeSettings">Done</button>
+</div>
+
+<section class="card" id="card">
+  <div class="steps"><span id="st1" class="on">1 Start</span><span id="st2">2 Draw</span><span id="st3">3 Fly</span></div>
+
+  <div id="pStart" class="grid" style="display:grid;gap:12px">
+    <h1>Where does the trip start?</h1>
+    <form id="fStart" class="row"><input type="text" id="qStart" placeholder="Address, place or city" autocomplete="off" enterkeyhint="search"><button class="go" id="bSearch">Search</button></form>
+    <div class="results" id="rStart"></div>
+    <div class="err" id="eStart" hidden></div>
+  </div>
+
+  <div id="pDraw" hidden style="display:grid;gap:12px">
+    <h1>Draw your path</h1>
+    <p id="drawHelp">Tap the map to add points from <b>A</b> to your destination. Drag to pan, pinch to zoom.</p>
+    <div class="stat"><div>POINTS<b id="nPts">1</b></div><div>DISTANCE<b id="dist">0.00 mi</b></div></div>
+    <label class="check"><input type="checkbox" id="optRoads"> Follow roads (driving route)</label>
+    <div class="row"><button id="bUndo">Undo</button><button id="bClear">Clear</button><button class="go" id="bFly" style="flex:1" disabled>Fly it</button></div>
+    <div class="err" id="eDraw" hidden></div>
+  </div>
+
+  <div id="pFly" hidden style="display:grid;gap:12px">
+    <h1 id="flyTitle">Flying your path</h1>
+    <div class="bar"><i id="prog"></i></div>
+    <div class="seg" role="group" aria-label="Camera"><button id="vTop" aria-pressed="true">Overhead</button><button id="vChase" aria-pressed="false">Chase</button></div>
+    <div class="row">
+      <label class="sl">Altitude <output id="oAlt">1,600 ft</output><input type="range" id="rAlt" min="150" max="3000" step="50" value="500"></label>
+      <label class="sl">Speed <output id="oSpd">90 mph</output><input type="range" id="rSpd" min="10" max="600" step="10" value="40"></label>
+    </div>
+    <div class="row"><button id="bPause">Pause</button><button id="bReplay">Replay</button><button id="bEdit">Edit path</button><button id="bNew">New trip</button></div>
+  </div>
+</section>
+
+<script>window.CESIUM_BASE_URL="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/";</script>
+<script src="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js"></script>
+<script>
+(() => {
+const C = Cesium, $ = id => document.getElementById(id);
+const M2FT = 3.28084, M2MI = 1/1609.344;
+const store = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}} };
+
+/* ---------- Viewer ---------- */
+const esri = new C.UrlTemplateImageryProvider({
+  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", maximumLevel:19,
+  credit:"Esri, Maxar, Earthstar Geographics"});
+const viewer = new C.Viewer("globe", {
+  baseLayer:new C.ImageryLayer(esri), baseLayerPicker:false, geocoder:false, homeButton:false, sceneModePicker:false,
+  navigationHelpButton:false, animation:false, timeline:false, fullscreenButton:false, infoBox:false, selectionIndicator:false,
+  terrainProvider:new C.EllipsoidTerrainProvider(), requestRenderMode:false });
+const scene = viewer.scene, camera = viewer.camera;
+scene.globe.enableLighting = false;
+scene.globe.maximumScreenSpaceError = 1.6;
+scene.skyAtmosphere.show = true;
+viewer.cesiumWidget.creditContainer.style.display = "none";
+const labels = viewer.imageryLayers.addImageryProvider(new C.UrlTemplateImageryProvider({
+  url:"https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", maximumLevel:19}));
+$("optLabels").onchange = e => labels.show = e.target.checked;
+
+/* Optional Google photorealistic 3D tiles */
+let g3d = null;
+async function loadGoogle(key){
+  if (g3d){ scene.primitives.remove(g3d); g3d = null; scene.globe.show = true; }
+  if (!key){ $("keyState").textContent = "Using Esri satellite imagery."; return; }
+  try{
+    g3d = await C.Cesium3DTileset.fromUrl("https://tile.googleapis.com/v1/3dtiles/root.json?key="+encodeURIComponent(key), {showCreditsOnScreen:true});
+    scene.primitives.add(g3d); scene.globe.show = false;
+    $("keyState").textContent = "Google 3D tiles on.";
+  }catch(e){ g3d = null; scene.globe.show = true; $("keyState").textContent = "Google tiles failed to load: check the key and that Map Tiles API is enabled."; }
+}
+$("gkey").value = store.get("flybye.gkey") || "";
+loadGoogle($("gkey").value);
+$("gear").onclick = () => $("settings").hidden = !$("settings").hidden;
+$("closeSettings").onclick = () => $("settings").hidden = true;
+$("saveKey").onclick = () => { const k=$("gkey").value.trim(); store.set("flybye.gkey",k); loadGoogle(k); };
+
+/* HUD */
+scene.postRender.addEventListener(() => {
+  const c = camera.positionCartographic;
+  $("hLat").textContent = C.Math.toDegrees(c.latitude).toFixed(4);
+  $("hLon").textContent = C.Math.toDegrees(c.longitude).toFixed(4);
+  $("hAlt").textContent = c.height > 30000 ? Math.round(c.height*M2MI).toLocaleString()+" mi" : Math.round(c.height*M2FT).toLocaleString()+" ft";
+  $("hHdg").textContent = String(Math.round(C.Math.toDegrees(camera.heading))%360).padStart(3,"0")+"°";
+});
+
+/* ---------- Step 1: opening spin ---------- */
+let spinning = true;
+camera.setView({destination:C.Cartesian3.fromDegrees(-30, 20, 2.2e7)});
+let last = performance.now();
+scene.preRender.addEventListener(() => {
+  const now = performance.now(), dt = Math.min(.1,(now-last)/1000); last = now;
+  if (spinning) camera.rotate(C.Cartesian3.UNIT_Z, -dt*0.9);  // ~52°/s: quick world tour
+  tick(dt);
+});
+const stopSpin = () => spinning = false;
+viewer.screenSpaceEventHandler.setInputAction(stopSpin, C.ScreenSpaceEventType.LEFT_DOWN);
+
+function setStep(n){
+  ["st1","st2","st3"].forEach((id,i)=>$(id).className = i+1<n ? "done" : i+1===n ? "on" : "");
+  $("pStart").hidden = n!==1; $("pDraw").hidden = n!==2; $("pFly").hidden = n!==3;
+  $("pStart").style.display = n===1?"grid":"none"; $("pDraw").style.display = n===2?"grid":"none"; $("pFly").style.display = n===3?"grid":"none";
+}
+
+/* Geocoding: Photon (OSM), Nominatim fallback */
+async function geocode(q){
+  try{
+    const r = await fetch("https://photon.komoot.io/api/?limit=5&q="+encodeURIComponent(q));
+    if (!r.ok) throw 0;
+    const j = await r.json();
+    const out = j.features.map(f=>{const p=f.properties;
+      const main=[p.housenumber&&p.street?p.housenumber+" "+p.street:p.name||p.street].filter(Boolean).join("");
+      const sub=[p.city||p.county,p.state,p.country].filter(Boolean).join(", ");
+      return {name:main||sub, sub:main?sub:"", lon:f.geometry.coordinates[0], lat:f.geometry.coordinates[1]};});
+    if (out.length) return out;
+  }catch(e){}
+  const r = await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q="+encodeURIComponent(q));
+  const j = await r.json();
+  return j.map(x=>({name:x.display_name.split(",")[0], sub:x.display_name.split(",").slice(1,4).join(",").trim(), lon:+x.lon, lat:+x.lat}));
+}
+$("fStart").onsubmit = async e => {
+  e.preventDefault(); const q=$("qStart").value.trim(); if(!q) return;
+  $("eStart").hidden = true; $("rStart").innerHTML = ""; $("bSearch").disabled = true; $("bSearch").textContent = "Searching…";
+  try{
+    const res = await geocode(q);
+    if (!res.length){ $("eStart").textContent="No matches. Try adding a city or state."; $("eStart").hidden=false; }
+    res.forEach(r=>{ const b=document.createElement("button"); b.type="button";
+      b.innerHTML = "<span></span><small></small>"; b.firstChild.textContent=r.name; b.lastChild.textContent=r.sub;
+      b.onclick=()=>startAt(r); $("rStart").appendChild(b); });
+    if (res.length===1) startAt(res[0]);
+  }catch(err){ $("eStart").textContent="Search failed. Check your connection and try again."; $("eStart").hidden=false; }
+  $("bSearch").disabled=false; $("bSearch").textContent="Search";
+};
+
+/* ---------- Step 2: drawing ---------- */
+let pts = [];          // waypoints: Cartographic (radians)
+let route = null;      // dense flight path (Cartographic[]) once built
+const pathEnt = viewer.entities.add({polyline:{positions:new C.CallbackProperty(()=>C.Ellipsoid.WGS84.cartographicArrayToCartesianArray(route||pts),false),
+  width:5, material:C.Color.fromCssColorString("#ffb23e"), clampToGround:new C.CallbackProperty(()=>!!g3d,false)}});
+let markers = [];
+function redrawMarkers(){
+  markers.forEach(m=>viewer.entities.remove(m)); markers=[];
+  pts.forEach((p,i)=>{ const end = i===0 || i===pts.length-1;
+    markers.push(viewer.entities.add({position:C.Cartesian3.fromRadians(p.longitude,p.latitude,0),
+      point:{pixelSize:end?14:8, color:C.Color.fromCssColorString(i===0?"#e9f0f2":"#ffb23e"), outlineColor:C.Color.fromCssColorString("#0d1418"), outlineWidth:2,
+        disableDepthTestDistance:Number.POSITIVE_INFINITY, heightReference:g3d?C.HeightReference.CLAMP_TO_GROUND:C.HeightReference.NONE},
+      label: end && (i===0||pts.length>1) ? {text:i===0?"A":"B", font:"700 14px Figtree, sans-serif", fillColor:C.Color.WHITE, outlineColor:C.Color.BLACK, outlineWidth:3,
+        style:C.LabelStyle.FILL_AND_OUTLINE, pixelOffset:new C.Cartesian2(0,-20), disableDepthTestDistance:Number.POSITIVE_INFINITY} : undefined}));
+  });
+  $("nPts").textContent = pts.length;
+  $("dist").textContent = (lengthOf(pts)*M2MI).toFixed(2)+" mi";
+  $("bFly").disabled = pts.length<2;
+}
+function lengthOf(arr){ let d=0; for(let i=1;i<arr.length;i++) d+=new C.EllipsoidGeodesic(arr[i-1],arr[i]).surfaceDistance; return d; }
+
+function startAt(r){
+  stopSpin(); route=null; pts=[C.Cartographic.fromDegrees(r.lon,r.lat)]; redrawMarkers();
+  camera.flyTo({destination:C.Cartesian3.fromDegrees(r.lon, r.lat-0.012, 1500), orientation:{heading:0,pitch:C.Math.toRadians(-62),roll:0}, duration:4.5,
+    easingFunction:C.EasingFunction.QUADRATIC_IN_OUT});
+  setStep(2);
+}
+
+function pickCarto(pos){
+  let cart = null;
+  if (g3d && scene.pickPositionSupported){ const c = scene.pickPosition(pos); if (c) cart = c; }
+  if (!cart){ const ray = camera.getPickRay(pos); cart = scene.globe.show ? scene.globe.pick(ray,scene) : null; if(!cart) cart = camera.pickEllipsoid(pos); }
+  if (!cart) return null; const c = C.Cartographic.fromCartesian(cart); c.height = 0; return c;
+}
+viewer.screenSpaceEventHandler.setInputAction(e=>{
+  if ($("pDraw").hidden || !pts.length) return;
+  const c = pickCarto(e.position); if(!c) return;
+  route=null; pts.push(c); redrawMarkers();
+}, C.ScreenSpaceEventType.LEFT_CLICK);
+$("bUndo").onclick = ()=>{ if(pts.length>1){pts.pop(); route=null; redrawMarkers();} };
+$("bClear").onclick = ()=>{ pts=pts.slice(0,1); route=null; redrawMarkers(); };
+
+/* Build a dense, smooth path */
+function densify(arr, step){
+  const out=[arr[0]];
+  for(let i=1;i<arr.length;i++){ const g=new C.EllipsoidGeodesic(arr[i-1],arr[i]), d=g.surfaceDistance, n=Math.max(1,Math.ceil(d/step));
+    for(let k=1;k<=n;k++) out.push(g.interpolateUsingFraction(k/n)); }
+  return out;
+}
+function smoothCorners(arr){  // Catmull-Rom through waypoints, sampled ~every 8 m
+  if (arr.length<3) return densify(arr,8);
+  const P = C.Ellipsoid.WGS84.cartographicArrayToCartesianArray(arr), times=[0];
+  for(let i=1;i<P.length;i++) times.push(times[i-1]+C.Cartesian3.distance(P[i-1],P[i]));
+  const spline = new C.CatmullRomSpline({times, points:P}), total=times[times.length-1], n=Math.min(6000,Math.max(50,Math.ceil(total/8)));
+  const out=[]; for(let k=0;k<=n;k++){ const c=C.Cartographic.fromCartesian(spline.evaluate(total*k/n)); c.height=0; out.push(c); }
+  return out;
+}
+async function roadRoute(arr){
+  const w = arr.length>25 ? arr.filter((_,i)=>i%Math.ceil(arr.length/25)===0||i===arr.length-1) : arr;
+  const coords = w.map(c=>C.Math.toDegrees(c.longitude).toFixed(6)+","+C.Math.toDegrees(c.latitude).toFixed(6)).join(";");
+  const r = await fetch("https://router.project-osrm.org/route/v1/driving/"+coords+"?overview=full&geometries=geojson");
+  const j = await r.json(); if (j.code!=="Ok") throw new Error(j.message||"No route");
+  return densify(j.routes[0].geometry.coordinates.map(([lo,la])=>C.Cartographic.fromDegrees(lo,la)), 8);
+}
+
+$("bFly").onclick = async ()=>{
+  $("eDraw").hidden=true; $("bFly").disabled=true; $("bFly").textContent="Plotting…";
+  try{ route = $("optRoads").checked ? await roadRoute(pts) : smoothCorners(pts); }
+  catch(e){ $("eDraw").textContent="Couldn't find a road route here. Flying the drawn line instead."; $("eDraw").hidden=false; route=smoothCorners(pts); }
+  $("bFly").textContent="Fly it"; $("bFly").disabled=false;
+  startFlight();
+};
+
+/* ---------- Step 3: flight ---------- */
+const F = {on:false, paused:false, s:0, dist:[], total:0, hdg:0, roll:0, mode:"top", t:0, T:0};
+const alt = () => +$("rAlt").value;                 // metres above ground
+const spd = () => +$("rSpd").value;                 // metres per second
+function fmtUI(){ $("oAlt").textContent = (Math.round(alt()*M2FT/10)*10).toLocaleString()+" ft"; $("oSpd").textContent = Math.round(spd()*2.23694)+" mph"; }
+$("rAlt").oninput = fmtUI; $("rSpd").oninput = ()=>{ fmtUI(); retime(); }; fmtUI();
+
+function startFlight(){
+  F.dist=[0]; for(let i=1;i<route.length;i++) F.dist.push(F.dist[i-1]+new C.EllipsoidGeodesic(route[i-1],route[i]).surfaceDistance);
+  F.total=F.dist[F.dist.length-1];
+  F.groundH = 0;
+  if (g3d){ const h = scene.sampleHeight ? scene.sampleHeight(route[0]) : undefined; F.groundH = isFinite(h)?h:0; }
+  F.hdg = bearingAt(0); F.roll=0; F.t=0; retime(); F.paused=false; F.on=true;
+  $("bPause").textContent="Pause";
+  $("flyTitle").textContent = "Flying "+(F.total*M2MI).toFixed(2)+" mi";
+  setStep(3);
+  redrawMarkers();
+}
+function retime(){ if(!F.total) return; const u = F.T? F.t/F.T : 0; F.T = Math.max(4, F.total/spd()*1.35); F.t = u*F.T; }  // 1.35: ease-in/out overhead
+function at(s){ // Cartographic at distance s along route
+  s=C.Math.clamp(s,0,F.total); let lo=0,hi=F.dist.length-1;
+  while(hi-lo>1){const m=(lo+hi)>>1; if(F.dist[m]<=s) lo=m; else hi=m;}
+  const seg=F.dist[hi]-F.dist[lo]||1, f=(s-F.dist[lo])/seg, a=route[lo], b=route[hi];
+  return new C.Cartographic(a.longitude+(b.longitude-a.longitude)*f, a.latitude+(b.latitude-a.latitude)*f, 0);
+}
+function bearing(a,b){ const y=Math.sin(b.longitude-a.longitude)*Math.cos(b.latitude),
+  x=Math.cos(a.latitude)*Math.sin(b.latitude)-Math.sin(a.latitude)*Math.cos(b.latitude)*Math.cos(b.longitude-a.longitude); return Math.atan2(y,x); }
+function bearingAt(s){ const look=Math.max(60, alt()*0.5); return bearing(at(s-look*0.3), at(s+look)); }
+const ease = u => u<.5 ? 4*u*u*u : 1-Math.pow(-2*u+2,3)/2;
+const wrap = a => Math.atan2(Math.sin(a),Math.cos(a));
+
+function tick(dt){
+  if(!F.on) return;
+  if(!F.paused){ F.t=Math.min(F.T, F.t+dt); }
+  const u = F.t/F.T, s = F.total*ease(u);
+  $("prog").style.width=(u*100).toFixed(1)+"%";
+  const target = bearingAt(s), dh = wrap(target-F.hdg);
+  F.hdg = wrap(F.hdg + dh*Math.min(1, dt*2.2));
+  const chase = F.mode==="chase";
+  F.roll += ((chase? C.Math.clamp(-dh*0.6,-0.2,0.2) : 0) - F.roll)*Math.min(1,dt*3);
+  const p = at(s), H = alt()+F.groundH, pitch = chase? C.Math.toRadians(-32) : C.Math.toRadians(-89.9);
+  const back = chase ? (alt()/Math.tan(-pitch)) : 0;
+  const ground = C.Cartesian3.fromRadians(p.longitude,p.latitude,F.groundH);
+  const enu = C.Transforms.eastNorthUpToFixedFrame(ground);
+  const local = new C.Cartesian3(-Math.sin(F.hdg)*back, -Math.cos(F.hdg)*back, alt());
+  const dest = C.Matrix4.multiplyByPoint(enu, local, new C.Cartesian3());
+  camera.setView({destination:dest, orientation:{heading:F.hdg, pitch, roll:F.roll}});
+  if (u>=1 && !F.paused){ F.paused=true; $("bPause").textContent="Done"; $("flyTitle").textContent="Arrived · "+(F.total*M2MI).toFixed(2)+" mi"; }
+}
+function setMode(m){ F.mode=m; $("vTop").setAttribute("aria-pressed",m==="top"); $("vChase").setAttribute("aria-pressed",m==="chase"); }
+$("vTop").onclick=()=>setMode("top"); $("vChase").onclick=()=>setMode("chase");
+$("bPause").onclick=()=>{ if(F.t>=F.T){ F.t=0; } F.paused=!F.paused; $("bPause").textContent=F.paused?"Resume":"Pause"; };
+$("bReplay").onclick=()=>{ F.t=0; F.hdg=bearingAt(0); F.paused=false; $("bPause").textContent="Pause"; $("flyTitle").textContent="Flying "+(F.total*M2MI).toFixed(2)+" mi"; };
+function endFlight(){ F.on=false; F.total=0; F.T=0; $("prog").style.width="0"; }
+$("bEdit").onclick=()=>{ endFlight(); route=null; redrawMarkers(); const a=pts[0];
+  camera.flyTo({destination:C.Rectangle.fromCartographicArray(pts.length>1?pts:[a,new C.Cartographic(a.longitude+1e-4,a.latitude+1e-4)]), duration:1.5});
+  setStep(2); };
+$("bNew").onclick=()=>{ endFlight(); route=null; pts=[]; redrawMarkers(); $("rStart").innerHTML=""; $("qStart").value="";
+  camera.flyTo({destination:C.Cartesian3.fromDegrees(C.Math.toDegrees(camera.positionCartographic.longitude),20,2.2e7), duration:2.5, complete:()=>spinning=true});
+  setStep(1); };
+setStep(1);
+})();
+</script>
+</body>
+</html>
