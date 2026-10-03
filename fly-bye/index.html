@@ -65,6 +65,9 @@ input[type=range]{accent-color:var(--amber);width:100%}
 .hint{font-size:12px;color:var(--muted)}
 .hint a{color:var(--sky)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.min-btn{margin-left:auto;flex:0 0 auto!important;background:none;border:none;border-radius:0;color:var(--muted);padding:7px 2px 0;font:500 11px/1 var(--mono);letter-spacing:.08em;cursor:pointer;border-top:2px solid transparent}
+.card.min .opt{display:none!important}
+@media (max-width:560px),(max-height:700px){.card{padding:12px;gap:8px;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}h1{font-size:17px}#drawHelp{display:none}.stat b{font-size:15px}button{padding:10px 12px}.results{max-height:120px}}
 </style>
 </head>
 <body>
@@ -89,7 +92,7 @@ input[type=range]{accent-color:var(--amber);width:100%}
 </div>
 
 <section class="card" id="card">
-  <div class="steps"><span id="st1" class="on">1 Start</span><span id="st2">2 Draw</span><span id="st3">3 Fly</span></div>
+  <div class="steps"><span id="st1" class="on">1 Start</span><span id="st2">2 Draw</span><span id="st3">3 Fly</span><button type="button" class="min-btn" id="bMin" aria-label="Collapse panel">HIDE</button></div>
 
   <div id="pStart" class="grid" style="display:grid;gap:12px">
     <h1>Where does the trip start?</h1>
@@ -100,9 +103,9 @@ input[type=range]{accent-color:var(--amber);width:100%}
 
   <div id="pDraw" hidden style="display:grid;gap:12px">
     <h1>Draw your path</h1>
-    <p id="drawHelp">Tap the map to add points from <b>A</b> to your destination. Drag to pan, pinch to zoom.</p>
-    <div class="stat"><div>POINTS<b id="nPts">1</b></div><div>DISTANCE<b id="dist">0.00 mi</b></div></div>
-    <label class="check"><input type="checkbox" id="optRoads"> Follow roads (driving route)</label>
+    <p id="drawHelp" class="opt">Tap the map to add points from <b>A</b> to your destination. Drag to pan, pinch to zoom.</p>
+    <div class="stat opt"><div>POINTS<b id="nPts">1</b></div><div>DISTANCE<b id="dist">0.00 mi</b></div></div>
+    <label class="check opt"><input type="checkbox" id="optRoads"> Follow roads (driving route)</label>
     <div class="row"><button id="bUndo">Undo</button><button id="bClear">Clear</button><button class="go" id="bFly" style="flex:1" disabled>Fly it</button></div>
     <div class="err" id="eDraw" hidden></div>
   </div>
@@ -110,8 +113,8 @@ input[type=range]{accent-color:var(--amber);width:100%}
   <div id="pFly" hidden style="display:grid;gap:12px">
     <h1 id="flyTitle">Flying your path</h1>
     <div class="bar"><i id="prog"></i></div>
-    <div class="seg" role="group" aria-label="Camera"><button id="vTop" aria-pressed="true">Overhead</button><button id="vChase" aria-pressed="false">Chase</button></div>
-    <div class="row">
+    <div class="seg opt" role="group" aria-label="Camera"><button id="vTop" aria-pressed="true">Overhead</button><button id="vChase" aria-pressed="false">Chase</button></div>
+    <div class="row opt">
       <label class="sl">Altitude <output id="oAlt">1,600 ft</output><input type="range" id="rAlt" min="150" max="3000" step="50" value="500"></label>
       <label class="sl">Speed <output id="oSpd">90 mph</output><input type="range" id="rSpd" min="10" max="600" step="10" value="40"></label>
     </div>
@@ -181,9 +184,11 @@ scene.preRender.addEventListener(() => {
   tick(dt);
 });
 const stopSpin = () => spinning = false;
+const lock=()=>{scene.screenSpaceCameraController.enableInputs=false}, unlock=()=>{scene.screenSpaceCameraController.enableInputs=true};
 viewer.screenSpaceEventHandler.setInputAction(stopSpin, C.ScreenSpaceEventType.LEFT_DOWN);
 
 function setStep(n){
+  if(n!==3 && $("bMin")){ $("card").classList.remove("min"); $("bMin").textContent="HIDE"; }
   ["st1","st2","st3"].forEach((id,i)=>$(id).className = i+1<n ? "done" : i+1===n ? "on" : "");
   $("pStart").hidden = n!==1; $("pDraw").hidden = n!==2; $("pFly").hidden = n!==3;
   $("pStart").style.display = n===1?"grid":"none"; $("pDraw").style.display = n===2?"grid":"none"; $("pFly").style.display = n===3?"grid":"none";
@@ -243,7 +248,7 @@ function lengthOf(arr){ let d=0; for(let i=1;i<arr.length;i++) d+=new C.Ellipsoi
 function startAt(r){
   stopSpin(); route=null; pts=[C.Cartographic.fromDegrees(r.lon,r.lat)]; redrawMarkers();
   camera.flyTo({destination:C.Cartesian3.fromDegrees(r.lon, r.lat-0.007, 1500), orientation:{heading:0,pitch:C.Math.toRadians(-62),roll:0}, duration:4.5,
-    easingFunction:C.EasingFunction.QUADRATIC_IN_OUT});
+    easingFunction:C.EasingFunction.QUADRATIC_IN_OUT, complete:unlock, cancel:unlock}); lock();
   setStep(2);
 }
 
@@ -307,7 +312,7 @@ function startFlight(){
   F.hdg = bearingAt(0); F.roll=0; F.t=0; retime(); F.paused=false; F.on=true;
   $("bPause").textContent="Pause";
   $("flyTitle").textContent = "Flying "+(F.total*M2MI).toFixed(2)+" mi";
-  setStep(3);
+  setStep(3); if(innerWidth<560||innerHeight<700){ $("card").classList.add("min"); $("bMin").textContent="SHOW"; } lock();
   redrawMarkers();
 }
 function retime(){ if(!F.total) return; const u = F.T? F.t/F.T : 0; F.T = Math.max(4, F.total/spd()*1.35); F.t = u*F.T; }  // 1.35: ease-in/out overhead
@@ -345,13 +350,14 @@ function setMode(m){ F.mode=m; $("vTop").setAttribute("aria-pressed",m==="top");
 $("vTop").onclick=()=>setMode("top"); $("vChase").onclick=()=>setMode("chase");
 $("bPause").onclick=()=>{ if(F.t>=F.T){ F.t=0; } F.paused=!F.paused; $("bPause").textContent=F.paused?"Resume":"Pause"; };
 $("bReplay").onclick=()=>{ F.t=0; F.hdg=bearingAt(0); F.paused=false; $("bPause").textContent="Pause"; $("flyTitle").textContent="Flying "+(F.total*M2MI).toFixed(2)+" mi"; };
-function endFlight(){ F.on=false; F.total=0; F.T=0; $("prog").style.width="0"; }
+function endFlight(){ unlock(); F.on=false; F.total=0; F.T=0; $("prog").style.width="0"; }
 $("bEdit").onclick=()=>{ endFlight(); route=null; redrawMarkers(); const a=pts[0];
-  camera.flyTo({destination:C.Rectangle.fromCartographicArray(pts.length>1?pts:[a,new C.Cartographic(a.longitude+1e-4,a.latitude+1e-4)]), duration:1.5});
+  camera.flyTo({destination:C.Cartesian3.fromRadians(a.longitude, a.latitude-C.Math.toRadians(0.007), 1500), orientation:{heading:0,pitch:C.Math.toRadians(-62),roll:0}, duration:1.5});
   setStep(2); };
 $("bNew").onclick=()=>{ endFlight(); route=null; pts=[]; redrawMarkers(); $("rStart").innerHTML=""; $("qStart").value="";
   camera.flyTo({destination:C.Cartesian3.fromDegrees(C.Math.toDegrees(camera.positionCartographic.longitude),20,2.2e7), duration:2.5, complete:()=>spinning=true});
   setStep(1); };
+$("bMin").onclick=()=>{ const c=$("card"); c.classList.toggle("min"); $("bMin").textContent=c.classList.contains("min")?"SHOW":"HIDE"; };
 setStep(1);
 })();
 </script>
