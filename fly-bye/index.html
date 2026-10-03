@@ -183,7 +183,9 @@ scene.preRender.addEventListener(() => {
   if (spinning) camera.rotate(C.Cartesian3.UNIT_Z, -dt*0.9);  // ~52°/s: quick world tour
   tick(dt);
 });
+let busy=false;
 const stopSpin = () => spinning = false;
+function arrive(){ unlock(); busy=false; $("drawHelp").innerHTML="Tap the map to add points from <b>A</b> to your destination. Drag to pan, pinch to zoom."; }
 const lock=()=>{scene.screenSpaceCameraController.enableInputs=false}, unlock=()=>{scene.screenSpaceCameraController.enableInputs=true};
 viewer.screenSpaceEventHandler.setInputAction(stopSpin, C.ScreenSpaceEventType.LEFT_DOWN);
 
@@ -248,7 +250,7 @@ function lengthOf(arr){ let d=0; for(let i=1;i<arr.length;i++) d+=new C.Ellipsoi
 function startAt(r){
   stopSpin(); route=null; pts=[C.Cartographic.fromDegrees(r.lon,r.lat)]; redrawMarkers();
   camera.flyTo({destination:C.Cartesian3.fromDegrees(r.lon, r.lat-0.007, 1500), orientation:{heading:0,pitch:C.Math.toRadians(-62),roll:0}, duration:4.5,
-    easingFunction:C.EasingFunction.QUADRATIC_IN_OUT, complete:unlock, cancel:unlock}); lock();
+    easingFunction:C.EasingFunction.QUADRATIC_IN_OUT, complete:arrive, cancel:arrive}); lock(); busy=true; $("drawHelp").textContent="Flying to your start pointâ€¦";
   setStep(2);
 }
 
@@ -259,7 +261,7 @@ function pickCarto(pos){
   if (!cart) return null; const c = C.Cartographic.fromCartesian(cart); c.height = 0; return c;
 }
 viewer.screenSpaceEventHandler.setInputAction(e=>{
-  if ($("pDraw").hidden || !pts.length) return;
+  if (busy || $("pDraw").hidden || !pts.length) return;
   const c = pickCarto(e.position); if(!c) return;
   route=null; pts.push(c); redrawMarkers();
 }, C.ScreenSpaceEventType.LEFT_CLICK);
