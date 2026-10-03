@@ -17,7 +17,7 @@
   --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box}[hidden]{display:none!important}
 html,body{height:100%;margin:0;background:var(--ink);color:var(--fg);font:15px/1.45 var(--body);overflow:hidden}
 #globe{position:fixed;inset:0}
 .cesium-viewer-bottom{display:none}
@@ -81,7 +81,7 @@ input[type=range]{accent-color:var(--amber);width:100%}
 
 <div id="settings" class="card" hidden>
   <h1>Settings</h1>
-  <label class="check"><input type="checkbox" id="optLabels" checked> Show place labels</label>
+  <label class="check"><input type="checkbox" id="optLabels"> Show place labels</label>
   <div class="hint">Optional: paste a Google Maps API key (Map Tiles API enabled) for photorealistic 3D buildings. Stored only in this browser.</div>
   <div class="row"><input type="password" id="gkey" placeholder="Google API key" autocomplete="off"><button id="saveKey">Save</button></div>
   <div class="hint" id="keyState"></div>
@@ -142,6 +142,7 @@ scene.skyAtmosphere.show = true;
 viewer.cesiumWidget.creditContainer.style.display = "none";
 const labels = viewer.imageryLayers.addImageryProvider(new C.UrlTemplateImageryProvider({
   url:"https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", maximumLevel:19}));
+labels.show = false;
 $("optLabels").onchange = e => labels.show = e.target.checked;
 
 /* Optional Google photorealistic 3D tiles */
@@ -241,7 +242,7 @@ function lengthOf(arr){ let d=0; for(let i=1;i<arr.length;i++) d+=new C.Ellipsoi
 
 function startAt(r){
   stopSpin(); route=null; pts=[C.Cartographic.fromDegrees(r.lon,r.lat)]; redrawMarkers();
-  camera.flyTo({destination:C.Cartesian3.fromDegrees(r.lon, r.lat-0.012, 1500), orientation:{heading:0,pitch:C.Math.toRadians(-62),roll:0}, duration:4.5,
+  camera.flyTo({destination:C.Cartesian3.fromDegrees(r.lon, r.lat-0.007, 1500), orientation:{heading:0,pitch:C.Math.toRadians(-62),roll:0}, duration:4.5,
     easingFunction:C.EasingFunction.QUADRATIC_IN_OUT});
   setStep(2);
 }
